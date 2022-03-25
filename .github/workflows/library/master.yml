@@ -1,0 +1,93 @@
+on:
+  workflow_call:
+    inputs:
+      build_command:
+        required: true
+        type: string
+      artifacts_publish_command:
+        required: false
+        type: string
+      container_build_command:
+        required: false
+        type: string
+      slack_channel_id:
+        required: false
+        type: string
+
+    secrets:
+      aws_ca_domain:
+        description: 'AWS_CA_DOMAIN'
+        required: false
+      aws_ca_owner_id:
+        description: 'AWS_CA_OWNER_ID'
+        required: false
+      aws_role_to_assume:
+        description: 'AWS_ROLE_TO_ASSUME'
+        required: false
+      slack_bot_token:
+        description: 'SLACK_BOT_TOKEN'
+        required: false
+      slack_channel_id:
+        description: 'SLACK_CHANNEL_ID'
+        required: false
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Setup: Checkout"
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: "Setup: Java"
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: "Setup: AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws_role_to_assume }}
+          aws-region: eu-central-1
+
+      - name: "Setup: Initialize variables"
+        id: vars
+        run: |
+          codeartifact_token=$(aws codeartifact get-authorization-token --domain ${{ secrets.aws_ca_domain }} --domain-owner ${{ secrets.aws_ca_owner_id }} --query authorizationToken --output text)
+          echo "::add-mask::$codeartifact_token"
+          echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
+          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: "Setup: Increment version"
+        id: version
+        uses: paulhatch/semantic-version@v4
+
+      - name: Build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+
+      - name: "Publish: Artifacts"
+        uses: gradle/gradle-build-action@v2
+        if: ${{ success() && inputs.artifacts_publish_command != 0 }}
+        with:
+          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+
+      - name: "Publish: Create and push tag"
+        if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
+        run: |
+          git tag ${{ steps.version.outputs.version_tag }}
+          git push origin ${{ steps.version.outputs.version_tag }}
+
+      - name: "Notify: Slack"
+        id: slack
+        if: ${{ failure() && inputs.slack_channel_id != 0 }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          channel-id: ${{ inputs.slack_channel_id }}
+          slack-message: Pipeline failed ${{ steps.vars.outputs.run_url }}

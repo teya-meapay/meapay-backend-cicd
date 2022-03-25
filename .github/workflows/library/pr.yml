@@ -1,0 +1,87 @@
+on:
+  workflow_call:
+    inputs:
+      build_command:
+        required: true
+        type: string
+      utest_command:
+        required: false
+        type: string
+      itest_command:
+        required: false
+        type: string
+      test_results_files:
+        required: true
+        type: string
+      spotbugs_results_files:
+        required: false
+        type: string
+
+    secrets:
+      aws_ca_domain:
+        description: 'AWS_CA_DOMAIN'
+        required: false
+      aws_ca_owner_id:
+        description: 'AWS_CA_OWNER_ID'
+        required: false
+      aws_role_to_assume:
+        description: 'AWS_ROLE_TO_ASSUME'
+        required: false
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Setup: Checkout"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: "Setup: Java"
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: "Setup: AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws_role_to_assume }}
+          aws-region: eu-central-1
+
+      - name: "Setup: Initialize variables"
+        id: vars
+        run: |
+          token=$(aws codeartifact get-authorization-token --domain ${{ secrets.aws_ca_domain }} --domain-owner ${{ secrets.aws_ca_owner_id }} --query authorizationToken --output text)
+          echo "::add-mask::$token"
+          echo "::set-output name=codeartifact_auth_token::$token"
+          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+
+      - name: "Test: Unit tests"
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.utest_command != 0 }}
+        with:
+          arguments: ${{ inputs.utest_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+
+      - name: "Test: Integration tests"
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.itest_command != 0 }}
+        with:
+          arguments: ${{ inputs.itest_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+
+      - name: "Publish: Spotbugs"
+        uses: jwgmeligmeyling/spotbugs-github-action@master
+        if: ${{ failure() && inputs.spotbugs_results_files != 0 }}
+        with:
+          path: ${{ inputs.spotbugs_results_files }}
+
+      - name: "Publish: Test Results"
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: ${{ inputs.test_results_files }}
