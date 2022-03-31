@@ -84,4 +84,5 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
+          check_name: "Test Results"
           files: ${{ inputs.test_results_files }}
