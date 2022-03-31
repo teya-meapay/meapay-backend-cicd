@@ -2,8 +2,6 @@
 
 ## TODO
 
-- Make this repository public to enable reusing (importing) workflows in repositories (described [here](https://docs.github.com/en/actions/using-workflows/reusing-workflows#access-to-reusable-workflows))
-- Get AWS related parameters from DevOps to configure them in repositories (admin permissions needed)
 - Finish Docker build step in application (Docker) pipeline (and adjust docs)
 - Finish deploy step in application (Docker) pipeline
 - Create release pipeline for applications
