@@ -25,7 +25,7 @@ Configuration for each pipeline type can be found below. Please notice comments 
 ---
 ### Feature (PR) pipeline
 #### Library (.jar)
-Pipeline located [here](/.github/workflows/library/pr.yml). Configuration:
+Pipeline located [here](/.github/workflows/library_pr.yml). Configuration:
 ```
 name: <repository name>-pr                                                # For example: meapay-backend-commons-pr
 
@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   pull-request:
-    uses: meawallet/meapay-backend-cicd/.github/workflows./library/pr.yml@master
+    uses: meawallet/meapay-backend-cicd/.github/workflows/library_pr.yml@master
     with:
       build_command: clean build --console=plain                        # Gradle command to build project
       spotbugs_results_files: |
@@ -57,7 +57,7 @@ jobs:
       aws_role_to_assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
 ```
 #### Application (Docker)
-Pipeline located [here](/.github/workflows/application/pr.yml). Configuration:
+Pipeline located [here](/.github/workflows/application_pr.yml). Configuration:
 ```
 name: <repository name>-pr                                                # For example: meapay-service-geolocation-pr
 
@@ -73,7 +73,7 @@ permissions:
 
 jobs:
   pull-request:
-    uses: meawallet/meapay-backend-cicd/.github/workflows./application/pr.yml@master
+    uses: meawallet/meapay-backend-cicd/.github/workflows/application_pr.yml@master
     with:
       build_command: clean build --console=plain                        # Gradle command to build project
       spotbugs_results_files: |
@@ -92,7 +92,7 @@ jobs:
 ---
 ### Master pipeline
 #### Library (.jar)
-Pipeline located [here](/.github/workflows/library/master.yml). Configuration:
+Pipeline located [here](/.github/workflows/library_master.yml). Configuration:
 ```
 name: <repository name>-master                                            # For example: meapay-backend-commons-master
 
@@ -113,7 +113,7 @@ permissions:
 
 jobs:
   master:
-    uses: meawallet/meapay-backend-cicd/.github/workflows./library/master.yml@master
+    uses: meawallet/meapay-backend-cicd/.github/workflows/library_master.yml@master
     with:
       build_command: clean build --console=plain                        # Gradle command to build project
       artifacts_publish_command: publish --stacktrace --console=plain   # Gradle command to publish .jar artifacts
@@ -125,7 +125,7 @@ jobs:
       slack_bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
 ```
 #### Application (Docker)
-Pipeline located [here](/.github/workflows/application/pr.yml). Configuration:
+Pipeline located [here](/.github/workflows/application_pr.yml). Configuration:
 ```
 name: <repository name>-master                                            # For example: meapay-service-geolocation-master
 
@@ -146,7 +146,7 @@ permissions:
 
 jobs:
   master:
-    uses: meawallet/meapay-backend-cicd/.github/workflows./library/master.yml@master
+    uses: meawallet/meapay-backend-cicd/.github/workflows/application_master.yml@master
     with:
       build_command: clean build --console=plain                        # Gradle command to build project
       docker_build_command: build                                       # Command to build Docker image
