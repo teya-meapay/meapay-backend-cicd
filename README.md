@@ -3,7 +3,7 @@
 ## TODO
 
 - Finish Docker build step in application (Docker) pipeline (and adjust docs)
-- Finish deploy step in application (Docker) pipeline
+- Finish docs for deploy step in application (Docker) pipeline
 - Create release pipeline for applications
 
 ---
