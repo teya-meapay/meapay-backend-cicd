@@ -9,7 +9,7 @@
 ---
 ## Pipelines
 [Trunk-based](https://trunkbaseddevelopment.com) version control management and branching model is used for backend repositories.  
-[GitHub Actions](https://docs.github.com/en/actions) are used as tool for pipelines. Pipelines consist of steps. As syntax of those is simple and self-descriptive, please check each pipeline source code to see list of them.
+[GitHub Actions](https://docs.github.com/en/actions) are used as tool for pipelines. Pipelines consist of steps. As syntax of those is simple and self-descriptive, please check each pipeline source code to see list of them.  
 ### Repository configuration
 There are multiple sensitive variables needed to be passed to pipeline. Those should be stored as encrypted [secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) in repository. Here is the list:
 - `AWS_CA_DOMAIN` - CodeArtifact [domain](https://docs.aws.amazon.com/codeartifact/latest/ug/domain-overview.html).
@@ -21,6 +21,8 @@ There are multiple sensitive variables needed to be passed to pipeline. Those sh
 To use pipeline in repository, appropriate configuration should be added to root folder under `.github/workflows/` as YAML file. 
 In order to keep it easy to understand name configuration file the same as pipeline file here is named (for example `library_pr.yml` for PR pipeline).
 Configuration for each pipeline type can be found below. Please notice comments there to fill repository specific parameters.
+### Pipeline badge
+Check [this](https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/adding-a-workflow-status-badge#using-the-workflow-file-name) page to add a badge pointing to any GitHub Action pipeline like [here](https://github.com/meawallet/meapay-backend-commons/blob/master/README.md).
 
 ---
 ### Feature (PR) pipeline
