@@ -64,6 +64,8 @@ jobs:
       - name: "Setup: Increment version"
         id: version
         uses: paulhatch/semantic-version@v4
+        with:
+          tag_prefix: "release-"
 
       - name: Build
         uses: gradle/gradle-build-action@v2

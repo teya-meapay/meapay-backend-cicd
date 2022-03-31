@@ -19,7 +19,7 @@ There are multiple sensitive variables needed to be passed to pipeline. Those sh
 - `SLACK_BOT_TOKEN` - Slack bot token (see action [docs](https://github.com/slackapi/slack-github-action#setup-1)) for notifications (master pipeline only).  
 
 To use pipeline in repository, appropriate configuration should be added to root folder under `.github/workflows/` as YAML file. 
-In order to keep it easy to understand name configuration file the same as pipeline file here is named (for example `pr.yml` for PR pipeline).
+In order to keep it easy to understand name configuration file the same as pipeline file here is named (for example `library_pr.yml` for PR pipeline).
 Configuration for each pipeline type can be found below. Please notice comments there to fill repository specific parameters.
 
 ---
