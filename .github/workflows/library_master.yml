@@ -80,12 +80,6 @@ jobs:
         with:
           arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
-      - name: "Publish: Create and push tag"
-        if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
-        run: |
-          git tag ${{ steps.version.outputs.version_tag }}
-          git push origin ${{ steps.version.outputs.version_tag }}
-
       - name: "Notify: Slack"
         id: slack
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
