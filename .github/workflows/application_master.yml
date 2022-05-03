@@ -83,7 +83,7 @@ jobs:
           echo "::add-mask::$codeartifact_token"
           echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
           echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "::set-output name=ENV_AWS_ACCOUNT_ID::${{ secrets.AWS_ACCOUNT_ID_DEV }}
+          echo "::set-output name=ENV_AWS_ACCOUNT_ID::${{ secrets.AWS_ACCOUNT_ID_DEV }}"
 
       - name: "Setup: Increment version"
         id: version
