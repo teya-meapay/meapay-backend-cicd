@@ -83,6 +83,7 @@ jobs:
           echo "::add-mask::$codeartifact_token"
           echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
           echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "::set-output name=ENV_AWS_ACCOUNT_ID::${{ AWS_ACCOUNT_ID_DEV }}
 
       - name: "Setup: Increment version"
         id: version
@@ -104,7 +105,7 @@ jobs:
           context: .
           build-args: APP_NAME="${{ inputs.service_name }}",JVM_OPTS="-Xms1024m -Xmx2048m"
           push: false
-          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.SERVICE }}
+          tags: ${{ steps.vars.outputs.ENV_AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.SERVICE }}
 
       - name: "Publish: Render Amazon ECS Task Definition"
         if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
