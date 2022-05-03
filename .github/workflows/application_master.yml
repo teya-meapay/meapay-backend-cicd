@@ -99,13 +99,13 @@ jobs:
 
       - name: "Docker build java image"
         env:
-          SERVICE: softpos-${{ inputs.service_name }}-service
+          service_full_name: softpos-${{ inputs.service_name }}-service
         uses: docker/build-push-action@v2
         with:
           context: .
           build-args: APP_NAME="${{ inputs.service_name }}",JVM_OPTS="-Xms1024m -Xmx2048m"
           push: false
-          tags: ${{ steps.vars.outputs.ENV_AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.SERVICE }}
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}
 
       - name: "Publish: Render Amazon ECS Task Definition"
         if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
