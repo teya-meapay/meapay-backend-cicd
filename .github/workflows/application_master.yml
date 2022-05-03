@@ -105,9 +105,7 @@ jobs:
           service_full_name: softpos-${{ inputs.service_name }}-service
         uses: docker/build-push-action@v2
         with:
-          build-args:
-            - APP_NAME="${{ inputs.service_name }}"
-            - JVM_OPTS="-Xms1024m -Xmx2048m"
+          build-args: APP_NAME="${{ inputs.service_name }}"|JVM_OPTS="-Xms1024m -Xmx2048m"
           push: false
           tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}
 
