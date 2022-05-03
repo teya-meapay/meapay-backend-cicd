@@ -104,7 +104,7 @@ jobs:
           context: .
           build-args: APP_NAME="${{ inputs.service_name }}",JVM_OPTS="-Xms1024m -Xmx2048m"
           push: false
-          tags: ${{ secrets.aws_accessKey_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.SERVICE }}
+          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.SERVICE }}
 
       - name: "Publish: Render Amazon ECS Task Definition"
         if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
