@@ -43,6 +43,9 @@ on:
       aws_role_to_assume:
         description: 'AWS_ROLE_TO_ASSUME'
         required: false
+      aws_env_account_id:
+        description: 'AWS_ROLE_TO_ASSUME'
+        required: false
       slack_bot_token:
         description: 'SLACK_BOT_TOKEN'
         required: false
