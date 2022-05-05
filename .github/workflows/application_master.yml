@@ -29,7 +29,10 @@ on:
       slack_channel_id:
         required: false
         type: string
-      service_name:
+      app_path:
+        required: false
+        type: string
+      app_name:
         required: true
         type: string
 
@@ -102,11 +105,11 @@ jobs:
 
       - name: "Build Image: Docker build java image"
         env:
-          service_full_name: softpos-${{ inputs.service_name }}-service
+          service_full_name: softpos-${{ inputs.app_name }}-service
         uses: docker/build-push-action@v2
         with:
           build-args: |
-            APP_NAME="${{ inputs.service_name }}"
+            APP_NAME="${{ inputs.app_path }}${{ inputs.app_name }}"
             JVM_OPTS="-Xms1024m -Xmx2048m"
           push: false
           tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}
