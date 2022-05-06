@@ -107,9 +107,11 @@ jobs:
       - name: "Build Image: Set up Docker Buildx"
         uses: docker/setup-buildx-action@v1
 
-      - name: "Build Image: Rename jar file"
-        run: |
-          find ./app-artifact/ -type f -name "*${{ inputs.app_name }}*.jar" -exec mv {} ${{ inputs.app_name }}.jar \;
+      - name: copy file
+        uses: canastro/copy-file-action@master
+        with:
+          source: "app-artifact/${{ inputs.app_name }}-app.jar"
+          target: "${{ inputs.app_name }}.jar"
 
       - name: "Build Image: Docker build java image"
         env:
