@@ -100,6 +100,10 @@ jobs:
         with:
           arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
+      - name: "Build Image: Copy Dockerfile and related into current repository"
+        run: |
+          git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
+
       - name: "Build Image: Set up Docker Buildx"
         uses: docker/setup-buildx-action@v1
 
