@@ -29,6 +29,12 @@ on:
       slack_channel_id:
         required: false
         type: string
+      app_path:
+        required: false
+        type: string
+      app_name:
+        required: true
+        type: string
 
     secrets:
       aws_ca_domain:
@@ -38,6 +44,9 @@ on:
         description: 'AWS_CA_OWNER_ID'
         required: false
       aws_role_to_assume:
+        description: 'AWS_ROLE_TO_ASSUME'
+        required: false
+      aws_env_account_id:
         description: 'AWS_ROLE_TO_ASSUME'
         required: false
       slack_bot_token:
@@ -80,37 +89,42 @@ jobs:
           echo "::add-mask::$codeartifact_token"
           echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
           echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "::set-output name=ENV_AWS_ACCOUNT_ID::${{ secrets.AWS_ACCOUNT_ID_DEV }}"
 
       - name: "Setup: Increment version"
         id: version
         uses: paulhatch/semantic-version@v4
 
-      - name: "Build: Application"
+      - name: Build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
-      # TODO source image and needed params
-      - name: "Build: Docker"
-        if: ${{ inputs.docker_build_command != 0 && inputs.docker_ecr_repository != 0 }}
-        env:
-          COMMAND: ${{ inputs.docker_build_command }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ inputs.docker_ecr_repository }}
-          IMAGE_TAG: ${{ steps.version.outputs.version }}
+      - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
-          docker $COMMAND -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
 
-      - name: "Publish: Docker"
-        id: publish-docker
-        if: ${{ inputs.docker_build_command != 0 && inputs.docker_ecr_repository != 0 }}
+      - name: "Build Image: Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v1
+
+      - name: copy file
+        uses: canastro/copy-file-action@master
+        with:
+          source: "app-artifact/${{ inputs.app_name }}-app.jar"
+          target: "${{ inputs.app_name }}.jar"
+
+      - name: "Build Image: Docker build java image"
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ inputs.docker_ecr_repository }}
-          IMAGE_TAG: ${{ steps.version.outputs.version }}
-        run: |
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          service_full_name: softpos-${{ inputs.app_name }}-service
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: softpos-buildstack/Dockerfile
+          build-args: |
+            APP_NAME=${{ inputs.app_name }}
+            JVM_OPTS="-Xms1024m -Xmx2048m"
+          push: false
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:latest
 
       - name: "Publish: Render Amazon ECS Task Definition"
         if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
