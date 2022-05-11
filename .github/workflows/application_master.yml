@@ -108,7 +108,6 @@ jobs:
           target: "${{ inputs.app_name }}.jar"
 
       - name: Login to Amazon ECR
-        if: ${{ secrets.aws_env_account_id != 0 }}
         id: login-ecr
         uses: docker/login-action@v1
         with:
