@@ -123,8 +123,8 @@ jobs:
           build-args: |
             APP_NAME=${{ inputs.app_name }}
             JVM_OPTS="-Xms1024m -Xmx2048m"
-          push: false
-          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:latest
+          push: true
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:latest
 
       - name: "Publish: Render Amazon ECS Task Definition"
         if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
