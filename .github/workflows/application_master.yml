@@ -74,7 +74,6 @@ jobs:
           aws-region: eu-central-1
 
       - name: "Setup: AWS ECR login"
-        if: ${{ inputs.docker_build_command != 0 }}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
