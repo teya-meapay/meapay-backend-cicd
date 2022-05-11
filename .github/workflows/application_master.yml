@@ -13,19 +13,6 @@ on:
       docker_ecr_repository:
         required: false
         type: string
-      # TODO add to the docs
-      ecs_task_definition:
-        required: false
-        type: string
-      ecs_task_definition_container_name:
-        required: false
-        type: string
-      ecs_service:
-        required: false
-        type: string
-      ecs_cluster:
-        required: false
-        type: string
       slack_channel_id:
         required: false
         type: string
@@ -34,6 +21,12 @@ on:
         type: string
       app_name:
         required: true
+        type: string
+      deploy_repo:
+        required: false
+        type: string
+      deploy_namespace:
+        required: false
         type: string
 
     secrets:
@@ -113,9 +106,7 @@ jobs:
           source: "app-artifact/${{ inputs.app_name }}-app.jar"
           target: "${{ inputs.app_name }}.jar"
 
-      - name: "Build Image: Docker build java image"
-        env:
-          service_full_name: softpos-${{ inputs.app_name }}-service
+      - name: "Build Image: Docker build java image and push to ECR"
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -124,15 +115,7 @@ jobs:
             APP_NAME=${{ inputs.app_name }}
             JVM_OPTS="-Xms1024m -Xmx2048m"
           push: true
-          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:latest
-
-      - name: "Publish: Render Amazon ECS Task Definition"
-        if: ${{ inputs.ecs_task_definition != 0 && inputs.ecs_task_definition_container_name != 0 }}
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ inputs.ecs_task_definition }}
-          container-name: ${{ inputs.ecs_task_definition_container_name }}
-          image: ${{ steps.publish-docker.outputs.image }}
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.service_full_name }}:latest
 
       - name: "Publish: Create and push tag"
         if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
@@ -140,14 +123,13 @@ jobs:
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
 
-      - name: "Deploy: Amazon ECS DEV"
-        if: ${{ inputs.ecs_service != 0 && inputs.ecs_cluster != 0 }}
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      - name: Dispatch deployment to the development
+        if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
+        uses: peter-evans/repository-dispatch@v2
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ inputs.ecs_service }}
-          cluster: ${{ inputs.ecs_cluster }}
-          wait-for-service-stability: true
+          event-type: dev-release
+          client-payload: '{"service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"'
+          repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
         id: slack
