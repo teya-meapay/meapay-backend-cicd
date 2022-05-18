@@ -98,7 +98,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ success() && inputs.artifacts_publish_command != 0 }}
         with:
-          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }}
+          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
