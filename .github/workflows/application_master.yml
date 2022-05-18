@@ -94,6 +94,12 @@ jobs:
         with:
           arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
+      - name: Publish Artifacts
+        uses: gradle/gradle-build-action@v2
+        if: ${{ success() && inputs.artifacts_publish_command != 0 }}
+        with:
+          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }}
+
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
           git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
@@ -130,7 +136,7 @@ jobs:
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
 
-      - name: Dispatch deployment to the development
+      - name: "Deploy: Dispatch deployment to the development"
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
