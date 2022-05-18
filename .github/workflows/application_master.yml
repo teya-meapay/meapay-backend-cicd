@@ -128,7 +128,7 @@ jobs:
           tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:latest
 
       - name: "Publish: Create and push tag"
-        if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
+        if: ${{ success() && inputs.build_command != 0 }}
         run: |
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
