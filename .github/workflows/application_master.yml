@@ -139,7 +139,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"'
+          client-payload: '{"service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
