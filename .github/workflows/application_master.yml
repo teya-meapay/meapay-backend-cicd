@@ -51,6 +51,9 @@ on:
       slack_channel_id:
         description: 'SLACK_CHANNEL_ID'
         required: false
+      cd_token:
+        description: 'CD_TOKEN'
+        required: false
 
 jobs:
   Build:
@@ -94,12 +97,6 @@ jobs:
         with:
           arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
 
-      - name: Publish Artifacts
-        uses: gradle/gradle-build-action@v2
-        if: ${{ success() && inputs.artifacts_publish_command != 0 }}
-        with:
-          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
-
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
           git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
@@ -140,6 +137,7 @@ jobs:
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
+          token: ${{ secrets.cd_token }}
           event-type: dev-release
           client-payload: '{"service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"'
           repository: ${{ inputs.deploy_repo }}
