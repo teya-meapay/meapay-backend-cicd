@@ -99,7 +99,7 @@ jobs:
 
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
-          git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
+          git clone --branch ${GITHUB_REF##*/} https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
 
       - name: "Build Image: Set up Docker Buildx"
         uses: docker/setup-buildx-action@v1
