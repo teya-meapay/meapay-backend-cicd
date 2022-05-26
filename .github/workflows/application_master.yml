@@ -1,3 +1,5 @@
+name: reusable-master-flow
+
 on:
   workflow_call:
     inputs:
@@ -123,7 +125,8 @@ jobs:
           file: softpos-buildstack/Dockerfile
           build-args: |
             APP_NAME=${{ inputs.app_name }}
-            JVM_OPTS="-Xms1024m -Xmx2048m"
+            JVM_MIN=-Xms1024m
+            JVM_MAX=-Xmx2048m
           push: true
           tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:latest
 
