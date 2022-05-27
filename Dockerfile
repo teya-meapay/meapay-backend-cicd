@@ -4,12 +4,14 @@ FROM amazoncorretto:11-alpine-jdk
 RUN mkdir /opt/app
 
 # Install required packages
-RUN echo "http://nl.alpinelinux.org/alpine/latest-stable/main/" >> /etc/apk/repositories && \
+RUN echo "http://nl.alpinelinux.org/alpine/edge/main/" >> /etc/apk/repositories && \
+    apk update && \
     apk add --no-cache --update bash curl
 
 # Define environment arguments
 ARG APP_NAME
-ARG JVM_OPTS
+ARG JVM_MIN
+ARG JVM_MAX
 
 # Define environments
 ENV WORKDIR_PATH /opt/app
@@ -23,4 +25,4 @@ COPY $JAR_FILENAME $WORKDIR_PATH
 COPY $BUILD_ROOT/healthcheck.sh $WORKDIR_PATH
 
 # Set default command arguments
-CMD ["/bin/bash","-c","java $JVM_OPTIONS -jar $JAR_FILENAME"]
+CMD ["/bin/bash","-c","java $JVM_MIN $JVM_MAX -jar $JAR_FILENAME"]

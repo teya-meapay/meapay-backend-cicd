@@ -1,3 +1,5 @@
+name: reusable-master-flow
+
 on:
   workflow_call:
     inputs:
@@ -51,6 +53,9 @@ on:
       slack_channel_id:
         description: 'SLACK_CHANNEL_ID'
         required: false
+      cd_token:
+        description: 'CD_TOKEN'
+        required: false
 
 jobs:
   Build:
@@ -96,7 +101,7 @@ jobs:
 
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
-          git clone --branch feature/AT-333 https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
+          git clone --branch ${GITHUB_REF##*/} https://.:${{ secrets.GITHUB_TOKEN }}@github.com/meawallet/meapay-backend-cicd softpos-buildstack
 
       - name: "Build Image: Set up Docker Buildx"
         uses: docker/setup-buildx-action@v1
@@ -120,22 +125,24 @@ jobs:
           file: softpos-buildstack/Dockerfile
           build-args: |
             APP_NAME=${{ inputs.app_name }}
-            JVM_OPTS="-Xms1024m -Xmx2048m"
+            JVM_MIN=-Xms1024m
+            JVM_MAX=-Xmx2048m
           push: true
           tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:latest
 
       - name: "Publish: Create and push tag"
-        if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
+        if: ${{ success() && inputs.build_command != 0 }}
         run: |
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
 
-      - name: Dispatch deployment to the development
+      - name: "Deploy: Dispatch deployment to the development"
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
+          token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"'
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
