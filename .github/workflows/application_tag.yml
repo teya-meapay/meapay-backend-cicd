@@ -57,8 +57,7 @@ jobs:
       - name: "Get latest tag if input is empty"
         if: ${{ inputs.deploy_tag != 0 }}
         run: |
-          latest_tag=$(git describe --abbrev=0)
-          echo "DEPLOY_TAG=${{ latest_tag }}" >> $GITHUB_ENV
+          echo "DEPLOY_TAG=$(git describe --abbrev=0)" >> $GITHUB_ENV
 
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
