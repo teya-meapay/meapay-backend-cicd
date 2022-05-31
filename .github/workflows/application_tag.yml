@@ -74,12 +74,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: "Deploy: Dispatch deployment to the development"
+      - name: "Deploy: Dispatch deployment to tst environment"
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.cd_token }}
-          event-type: dev-release
+          event-type: tst-release
           client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
           repository: ${{ inputs.deploy_repo }}
 
