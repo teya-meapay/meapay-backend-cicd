@@ -72,9 +72,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: docker/login-action@v1
-        with:
-          registry: ${{ secrets.aws_role_to_assume }}.dkr.ecr.eu-central-1.amazonaws.com
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: "Deploy: Dispatch deployment to the development"
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
