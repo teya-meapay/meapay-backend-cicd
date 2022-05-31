@@ -54,7 +54,7 @@ jobs:
         id: check_tags
         shell: bash
         run: |
-          if [ "${{ inputs.deploy_tag != 0 }}" == "" ]; then
+          if [ "${{ inputs.deploy_tag }}" == "" ]; then
              echo ::set-output name=tag::$(git describe --abbrev=0)"
            else
              echo ::set-output name=tag::${{inputs.deploy_tag}}"
