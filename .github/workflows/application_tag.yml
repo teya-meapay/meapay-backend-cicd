@@ -50,14 +50,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: "Set tag to deploy from input"
+      - name: "Set tag to deploy"
+        description: "tag is obtained from input or latest one by default"
+        id: check_tags
+        shell: bash
         run: |
-          echo "DEPLOY_TAG=${{ inputs.deploy_tag }}" >> $GITHUB_ENV
-
-      - name: "Get latest tag if input is empty"
-        if: ${{ inputs.deploy_tag != 0 }}
-        run: |
-          echo "DEPLOY_TAG=$(git describe --abbrev=0)" >> $GITHUB_ENV
+          if [ "${{ inputs.deploy_tag != 0 }}" == "" ]; then
+             echo ::set-output name=tag::$(git describe --abbrev=0)"
+           else
+             echo ::set-output name=tag::${{inputs.deploy_tag}}"
+           fi
 
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
@@ -82,7 +84,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ steps.check_tags.outputs.tag }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
