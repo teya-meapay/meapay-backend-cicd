@@ -11,7 +11,7 @@ on:
         required: false
         type: string
       test_results_files:
-        required: true
+        required: false
         type: string
       spotbugs_results_files:
         required: false
