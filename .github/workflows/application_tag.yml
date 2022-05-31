@@ -51,7 +51,6 @@ jobs:
           fetch-depth: 0
 
       - name: "Set tag to deploy"
-        description: "tag is obtained from input or latest one by default"
         id: check_tags
         shell: bash
         run: |
