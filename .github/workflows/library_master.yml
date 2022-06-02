@@ -13,6 +13,10 @@ on:
       slack_channel_id:
         required: false
         type: string
+      main_branch:
+        required: false
+        type: string
+        default: "master"
 
     secrets:
       aws_ca_domain:
@@ -65,7 +69,7 @@ jobs:
         id: version
         uses: paulhatch/semantic-version@v4
         with:
-          branch: "master"
+          branch: ${{ inputs.main_branch }}
           tag_prefix: "release-"
           format: "${major}.${minor}.${patch}"
 
