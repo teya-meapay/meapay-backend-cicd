@@ -82,7 +82,7 @@ jobs:
 
       - name: "Publish: Test Results"
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: ${{ inputs.utest_command != 0 || inputs.itest_command != 0 }}
+        if: ${{ always() && inputs.test_results_files != 0 }}
         with:
           check_name: "Test Results"
           files: ${{ inputs.test_results_files }}
