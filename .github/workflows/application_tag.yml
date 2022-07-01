@@ -1,0 +1,94 @@
+name: reusable-deploy-tag-flow
+
+on:
+  workflow_call:
+    inputs:
+      slack_channel_id:
+        required: false
+        type: string
+      app_name:
+        required: true
+        type: string
+      service_name:
+        required: false
+        type: string
+      deploy_repo:
+        required: false
+        type: string
+      deploy_tag:
+        description: 'Tag to be deployed'
+        required: false
+        type: string
+
+    secrets:
+      aws_ca_domain:
+        description: 'AWS_CA_DOMAIN'
+        required: false
+      aws_ca_owner_id:
+        description: 'AWS_CA_OWNER_ID'
+        required: false
+      aws_role_to_assume:
+        description: 'AWS_ROLE_TO_ASSUME'
+        required: false
+      slack_bot_token:
+        description: 'SLACK_BOT_TOKEN'
+        required: false
+      slack_channel_id:
+        description: 'SLACK_CHANNEL_ID'
+        required: false
+      cd_token:
+        description: 'CD_TOKEN'
+        required: false
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Setup: Checkout"
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: "Set tag to deploy from input"
+        run: |
+          echo "DEPLOY_TAG=${{ inputs.deploy_tag }}" >> $GITHUB_ENV
+
+      - name: "Get latest tag if input is empty"
+        if: ${{ inputs.deploy_tag == 0 }}
+        run: |
+          echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
+
+      - name: "Setup: AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.aws_role_to_assume }}
+          aws-region: eu-central-1
+
+      - name: "Setup: Initialize variables"
+        id: vars
+        run: |
+          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: "Deploy: Dispatch deployment to tst environment"
+        if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.cd_token }}
+          event-type: tst-release
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
+          repository: ${{ inputs.deploy_repo }}
+
+      - name: "Notify: Slack"
+        id: slack
+        if: ${{ failure() && inputs.slack_channel_id != 0 }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          channel-id: ${{ inputs.slack_channel_id }}
+          slack-message: Pipeline failed ${{ steps.vars.outputs.run_url }}

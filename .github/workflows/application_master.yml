@@ -128,7 +128,7 @@ jobs:
             JVM_MIN=-Xms1024m
             JVM_MAX=-Xmx2048m
           push: true
-          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }},${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:latest
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }}
 
       - name: "Publish: Create and push tag"
         if: ${{ success() && inputs.build_command != 0 }}
