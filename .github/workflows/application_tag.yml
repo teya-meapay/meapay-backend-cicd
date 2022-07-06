@@ -59,6 +59,21 @@ jobs:
         run: |
           echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
 
+      - name: "Get latest github release"
+        run: |
+          echo "LATEST_GH_RELEASE=$(gh release list | head -1 |  awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: "Bump github release version"
+        id: bump_gh_release_version
+        uses: christian-draeger/increment-semantic-version@1.0.2
+        with:
+          current-version: ${{ env.LATEST_GH_RELEASE }}'
+          version-fragment: 'bug'
+
+      - name: "Create new github release version"
+        run: |
+          gh release create ${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
         with:
