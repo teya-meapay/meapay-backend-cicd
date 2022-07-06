@@ -62,6 +62,8 @@ jobs:
       - name: "Get latest github release"
         run: |
           echo "LATEST_GH_RELEASE=$(gh release list | head -1 |  awk '{print $1}')" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Bump github release version"
         id: bump_gh_release_version
@@ -73,6 +75,8 @@ jobs:
       - name: "Create new github release version"
         run: |
           gh release create ${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
