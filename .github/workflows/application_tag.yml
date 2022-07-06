@@ -69,7 +69,7 @@ jobs:
         id: bump_gh_release_version
         uses: christian-draeger/increment-semantic-version@1.0.2
         with:
-          current-version: ${{ env.LATEST_GH_RELEASE }}'
+          current-version: '0.1.27'
           version-fragment: 'bug'
 
       - name: "Create new github release version"
