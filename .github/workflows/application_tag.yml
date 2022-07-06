@@ -61,7 +61,7 @@ jobs:
 
       - name: "Get latest github release"
         run: |
-          echo "LATEST_GH_RELEASE=$(gh release list | head -1 |  awk '{print $1}')" >> $GITHUB_ENV
+          echo "LATEST_GH_RELEASE=$(gh release list | head -1 |  awk '{print substr($1,9)}')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -74,7 +74,7 @@ jobs:
 
       - name: "Create new github release version"
         run: |
-          gh release create ${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+          gh release create release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
