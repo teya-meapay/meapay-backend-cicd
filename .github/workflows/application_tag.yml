@@ -91,11 +91,40 @@ jobs:
           version-fragment: 'bug'
 
       - name: "Create new github release version"
+        id: gh_new_release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
           gh release create release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+          release_title=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name + " " + .html_url')
+          echo "::set-output name=release_title::$release_title"
+          RELEASE_BODY=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.body')
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_BODY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Notify: Slack release notes"
+        id: slack-post-release
+        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        env:
+            SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
+        uses: slackapi/slack-github-action@v1.19.0
+        with:
+          channel-id: acquiring_releases
+          payload: |
+            {
+              "text": "${{ steps.gh_new_release.outputs.release_title }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ env.RELEASE_BODY }}"
+                  }
+                }
+              ]
+            }
 
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
@@ -121,12 +150,12 @@ jobs:
           client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
           repository: ${{ inputs.deploy_repo }}
 
-      - name: "Notify: Slack"
+      - name: "Notify: Slack errors"
         id: slack
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v1.19.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
           slack-message: Pipeline failed for ${{ github.event.repository.name }} and ${{ github.workflow }} workflow with error ${{ steps.vars.outputs.run_url }}
