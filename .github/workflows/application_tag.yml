@@ -59,16 +59,15 @@ jobs:
         run: |
           echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
 
-      - name: "Check if release already exists"
+      - name: "Check if a github release already exists"
         id: find_release
         run: |
-          release_tag_exist=$(gh api --silent repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{env.DEPLOY_TAG }} 2>&1 >/dev/null)
-          echo "::set-output name=release_tag_exist::$release_tag_exist"
+          gh api --silent repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{env.DEPLOY_TAG }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Get latest github release"
-        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        if: failure() && ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
           echo "LATEST_GH_RELEASE=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name' |  awk '{print substr($1,9)}')" >> $GITHUB_ENV
         env:
@@ -76,14 +75,14 @@ jobs:
 
       - name: "Bump github release version"
         id: bump_gh_release_version
-        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        if: failure()
         uses: christian-draeger/increment-semantic-version@1.0.2
         with:
           current-version: ${{ env.LATEST_GH_RELEASE }}
           version-fragment: 'bug'
 
       - name: "Create new github release version"
-        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        if: failure()
         run: |
           gh release create release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
         env:
