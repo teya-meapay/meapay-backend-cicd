@@ -94,14 +94,14 @@ jobs:
         id: gh_new_release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
-          gh release create release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
-          release_title=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name + " " + .html_url')
+          gh release create ${{ env.DEPLOY_TAG }} -t release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+          release_json=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }})
+          release_title=$(jq '.name' <<< "$release_json")
           echo "::set-output name=release_title::$release_title"
-          RELEASE_BODY=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.body')
-          RELEASE_BODY="${RELEASE_BODY//'%'/'%25'}"
-          RELEASE_BODY="${RELEASE_BODY//$'\n'/'%0A'}"
-          RELEASE_BODY="${RELEASE_BODY//$'\r'/'%0D'}"
-          echo "::set-output name=release_body::$RELEASE_BODY"
+          release_body=$(jq '.body' <<< "$release_json")
+          echo "::set-output name=release_body::$release_body"
+          release_url=$(jq '.html_url' <<< "$release_json")
+          echo "::set-output name=release_url::$release_url"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -115,13 +115,20 @@ jobs:
           channel-id: acquiring_releases
           payload: |
             {
-              "text": "${{ steps.gh_new_release.outputs.release_title }}",
+              "text": ${{ steps.gh_new_release.outputs.release_title }},
               "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": <${{ steps.gh_new_release.outputs.release_url }}|${{ steps.gh_new_release.outputs.release_title }}>
+                  }
+                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.gh_new_release.outputs.release_body }}"
+                    "text": ${{ steps.gh_new_release.outputs.release_body }}
                   }
                 }
               ]
