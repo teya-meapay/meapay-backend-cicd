@@ -98,9 +98,10 @@ jobs:
           release_title=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name + " " + .html_url')
           echo "::set-output name=release_title::$release_title"
           RELEASE_BODY=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.body')
-          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-          echo "$RELEASE_BODY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          RELEASE_BODY="${RELEASE_BODY//'%'/'%25'}"
+          RELEASE_BODY="${RELEASE_BODY//$'\n'/'%0A'}"
+          RELEASE_BODY="${RELEASE_BODY//$'\r'/'%0D'}"
+          echo "::set-output name=release_body::$RELEASE_BODY"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -120,7 +121,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ env.RELEASE_BODY }}"
+                    "text": "${{ steps.gh_new_release.outputs.release_body }}"
                   }
                 }
               ]
