@@ -11,7 +11,7 @@ on:
         required: false
         type: string
       test_results_files:
-        required: true
+        required: false
         type: string
       spotbugs_results_files:
         required: false
@@ -82,7 +82,7 @@ jobs:
 
       - name: "Publish: Test Results"
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
+        if: ${{ always() && inputs.test_results_files != 0 }}
         with:
           check_name: "Test Results"
           files: ${{ inputs.test_results_files }}
