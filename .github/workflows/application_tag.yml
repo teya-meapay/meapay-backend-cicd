@@ -98,7 +98,7 @@ jobs:
           release_json=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }})
           release_title=$(jq -r '.name' <<< "$release_json")
           echo "::set-output name=release_title::$release_title"
-          release_body=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }} | jq -r '.body')
+          release_body=$(jq '.body' <<< "$release_json")
           echo "::set-output name=release_body::$release_body"
           release_url=$(jq -r '.html_url' <<< "$release_json")
           echo "::set-output name=release_url::$release_url"
@@ -131,34 +131,15 @@ jobs:
                   "text":
                     {
                       "type": "mrkdwn",
-                      "text": "*<${{ steps.gh_new_release.outputs.release_url }}|Check on github>*"
-                    }
-                },
-                {
-                  "type": "section",
-                  "text":
-                    {
-                      "type": "mrkdwn",
-                      "text": "${{ steps.gh_new_release.outputs.release_body }}"
-                    }
-                },
-                {
-                  "type": "section",
-                  "text":
-                    {
-                      "type": "mrkdwn",
-                      "text": "Check full changes."
-                    },
-                  "accessory":
-                    {
+                      "text": ${{ steps.gh_new_release.outputs.release_body }}
+                    },                
+                    "accessory": {
                       "type": "button",
-                      "text":
-                        {
-                          "type": "plain_text",
-                          "text": "Check on Github",
-                          "emoji": true
-                        },
-                      "value": "click_me_123",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Check on Github :github:",
+                        "emoji": true
+                      },
                       "url": "${{ steps.gh_new_release.outputs.release_url }}",
                       "action_id": "button-action"
                     }
