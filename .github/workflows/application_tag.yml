@@ -179,4 +179,4 @@ jobs:
         uses: slackapi/slack-github-action@v1.19.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
-          slack-message: Pipeline failed for ${{ github.event.repository.name }} and ${{ github.workflow }} workflow with error ${{ steps.vars.outputs.run_url }}
+          slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
