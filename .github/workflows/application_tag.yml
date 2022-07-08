@@ -109,7 +109,7 @@ jobs:
         id: slack-post-release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         env:
-            SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
+          SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
         uses: slackapi/slack-github-action@v1.19.0
         with:
           channel-id: acquiring_releases
@@ -122,8 +122,8 @@ jobs:
                   "type": "header",
                   "text":
                     {
-                      "type": "mrkdwn",
-                      "text": "${{ steps.gh_new_release.outputs.release_title }}"
+                      "type": "plain_text",
+                      "text": ":meapay: ${{ steps.gh_new_release.outputs.release_title }}"
                     }
                 },
                 {
