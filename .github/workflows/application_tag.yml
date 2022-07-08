@@ -59,6 +59,94 @@ jobs:
         run: |
           echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
 
+      - name: "Check if a github release already exists"
+        id: find_release
+        run: |
+          get_release_tag_command=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/meawallet/meapay-service-attestation/releases/tags/${{ env.DEPLOY_TAG }}")
+          if [ $get_release_tag_command -eq 200 ] ; then
+            echo "tag release already exists"
+            echo "::set-output name=release_tag_exist::0"
+          elif [ $get_release_tag_command -eq 404 ] ; then
+            echo "tag release does not exists"
+            echo "::set-output name=release_tag_exist::1"
+          else 
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Get latest github release"
+        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        run: |
+          echo "LATEST_GH_RELEASE=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name' |  awk '{print substr($1,9)}')" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Bump github release version"
+        id: bump_gh_release_version
+        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        uses: christian-draeger/increment-semantic-version@1.0.2
+        with:
+          current-version: ${{ env.LATEST_GH_RELEASE }}
+          version-fragment: 'bug'
+
+      - name: "Create new github release version"
+        id: gh_new_release
+        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        run: |
+          gh release create ${{ env.DEPLOY_TAG }} -t release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+          release_json=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }})
+          release_title=$(jq -r '.name' <<< "$release_json")
+          echo "::set-output name=release_title::$release_title"
+          release_body=$(jq '.body' <<< "$release_json")
+          echo "::set-output name=release_body::$release_body"
+          release_url=$(jq -r '.html_url' <<< "$release_json")
+          echo "::set-output name=release_url::$release_url"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Notify: Slack release notes"
+        id: slack-post-release
+        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
+        uses: slackapi/slack-github-action@v1.19.0
+        with:
+          channel-id: acquiring_releases
+          payload: |
+            {
+              "text": "${{ steps.gh_new_release.outputs.release_title }}",
+              "blocks":
+              [
+                {
+                  "type": "header",
+                  "text":
+                    {
+                      "type": "plain_text",
+                      "text": ":meapay: ${{ steps.gh_new_release.outputs.release_title }}"
+                    }
+                },
+                {
+                  "type": "section",
+                  "text":
+                    {
+                      "type": "mrkdwn",
+                      "text": ${{ steps.gh_new_release.outputs.release_body }}
+                    },                
+                    "accessory": {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Check on Github :github:",
+                        "emoji": true
+                      },
+                      "url": "${{ steps.gh_new_release.outputs.release_url }}",
+                      "action_id": "button-action"
+                    }
+                }
+              ]
+            }
+
       - name: "Setup: AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -83,12 +171,12 @@ jobs:
           client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
           repository: ${{ inputs.deploy_repo }}
 
-      - name: "Notify: Slack"
+      - name: "Notify: Slack errors"
         id: slack
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v1.19.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
-          slack-message: Pipeline failed ${{ steps.vars.outputs.run_url }}
+          slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
