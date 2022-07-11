@@ -16,8 +16,8 @@ on:
         required: false
         type: string
       deploy_tag:
-        description: 'Tag to be deployed'
-        required: false
+        description: 'Tag to be deployed, leave it empty for getting latest git tag'
+        required: true
         type: string
 
     secrets:
