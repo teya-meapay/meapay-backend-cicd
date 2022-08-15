@@ -1,12 +1,10 @@
-FROM amazoncorretto:11-alpine-jdk
+FROM amazoncorretto:11
 
 # Create application volume
 RUN mkdir /opt/app
 
 # Install required packages
-RUN echo "http://nl.alpinelinux.org/alpine/edge/main/" >> /etc/apk/repositories && \
-    apk update && \
-    apk add --no-cache --update bash curl
+RUN yum -y update && yum -y install bash curl
 
 # Define environment arguments
 ARG APP_NAME
