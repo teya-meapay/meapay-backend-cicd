@@ -61,6 +61,8 @@ jobs:
   Build:
     runs-on: ubuntu-latest
 
+    environment: DEV
+    
     steps:
       - name: "Setup: Checkout"
         uses: actions/checkout@v3
@@ -78,15 +80,6 @@ jobs:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
           aws-region: eu-central-1
 
-      - name: "Setup: Initialize variables"
-        id: vars
-        run: |
-          codeartifact_token=$(aws codeartifact get-authorization-token --domain ${{ secrets.aws_ca_domain }} --domain-owner ${{ secrets.aws_ca_owner_id }} --query authorizationToken --output text)
-          echo "::add-mask::$codeartifact_token"
-          echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
-          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "::set-output name=ENV_AWS_ACCOUNT_ID::${{ secrets.AWS_ACCOUNT_ID_DEV }}"
-
       - name: "Setup: Increment version"
         id: version
         uses: paulhatch/semantic-version@v4
@@ -97,7 +90,7 @@ jobs:
       - name: Build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }}
 
       - name: "Build Image: Copy Dockerfile and related into current repository"
         run: |
@@ -142,7 +135,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ steps.version.outputs.version_tag }}"}'
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
@@ -153,4 +146,4 @@ jobs:
         uses: slackapi/slack-github-action@v1.18.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
-          slack-message: Pipeline failed ${{ steps.vars.outputs.run_url }}
+          slack-message: "Pipeline failed https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

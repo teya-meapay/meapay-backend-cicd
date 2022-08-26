@@ -44,6 +44,8 @@ jobs:
   Build:
     runs-on: ubuntu-latest
 
+    environment: TEST
+
     steps:
       - name: "Setup: Checkout"
         uses: actions/checkout@v3
@@ -168,7 +170,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: tst-release
-          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}"}'
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack errors"
