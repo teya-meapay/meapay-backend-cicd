@@ -57,14 +57,6 @@ jobs:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
           aws-region: eu-central-1
 
-      - name: "Setup: Initialize variables"
-        id: vars
-        run: |
-          codeartifact_token=$(aws codeartifact get-authorization-token --domain ${{ secrets.aws_ca_domain }} --domain-owner ${{ secrets.aws_ca_owner_id }} --query authorizationToken --output text)
-          echo "::add-mask::$codeartifact_token"
-          echo "::set-output name=codeartifact_auth_token::$codeartifact_token"
-          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
       - name: "Setup: Increment version"
         id: version
         uses: paulhatch/semantic-version@v4
@@ -76,13 +68,13 @@ jobs:
       - name: Build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.build_command }} -PreleaseVersion=${{ steps.version.outputs.version }}
 
       - name: "Publish: Artifacts"
         uses: gradle/gradle-build-action@v2
         if: ${{ success() && inputs.artifacts_publish_command != 0 }}
         with:
-          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.artifacts_publish_command }} -PreleaseVersion=${{ steps.version.outputs.version }}
 
       - name: "Publish: Create and push tag"
         if: ${{ success() && inputs.build_command != 0 && inputs.artifacts_publish_command != 0 }}
@@ -98,4 +90,4 @@ jobs:
         uses: slackapi/slack-github-action@v1.18.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
-          slack-message: Pipeline failed ${{ steps.vars.outputs.run_url }}
+          slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

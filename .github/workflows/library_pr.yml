@@ -49,30 +49,22 @@ jobs:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
           aws-region: eu-central-1
 
-      - name: "Setup: Initialize variables"
-        id: vars
-        run: |
-          token=$(aws codeartifact get-authorization-token --domain ${{ secrets.aws_ca_domain }} --domain-owner ${{ secrets.aws_ca_owner_id }} --query authorizationToken --output text)
-          echo "::add-mask::$token"
-          echo "::set-output name=codeartifact_auth_token::$token"
-          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
       - name: Build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: ${{ inputs.build_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.build_command }}
 
       - name: "Test: Unit tests"
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.utest_command != 0 }}
         with:
-          arguments: ${{ inputs.utest_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.utest_command }}
 
       - name: "Test: Integration tests"
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.itest_command != 0 }}
         with:
-          arguments: ${{ inputs.itest_command }} -PmavenUser=aws -PmavenPassword=${{ steps.vars.outputs.codeartifact_auth_token }}
+          arguments: ${{ inputs.itest_command }}
 
       - name: "Publish: Spotbugs"
         uses: jwgmeligmeyling/spotbugs-github-action@master
