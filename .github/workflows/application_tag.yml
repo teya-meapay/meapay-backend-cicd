@@ -15,6 +15,10 @@ on:
       deploy_repo:
         required: false
         type: string
+      deploy_cluster:
+        required: false
+        type: string
+        default: private
       deploy_tag:
         description: 'Tag to be deployed'
         required: false
@@ -170,7 +174,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: tst-release
-          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}"}'
+          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack errors"
