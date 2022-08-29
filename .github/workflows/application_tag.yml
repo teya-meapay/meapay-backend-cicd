@@ -68,7 +68,7 @@ jobs:
       - name: "Check if a github release already exists"
         id: find_release
         run: |
-          get_release_tag_command=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/meawallet/meapay-service-attestation/releases/tags/${{ env.DEPLOY_TAG }}")
+          get_release_tag_command=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.DEPLOY_TAG }}")
           if [ $get_release_tag_command -eq 200 ] ; then
             echo "tag release already exists"
             echo "::set-output name=release_tag_exist::0"
@@ -158,11 +158,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
           aws-region: eu-central-1
-
-      - name: "Setup: Initialize variables"
-        id: vars
-        run: |
-          echo "::set-output name=run_url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Login to Amazon ECR
         id: login-ecr
