@@ -87,7 +87,7 @@ jobs:
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
           slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
