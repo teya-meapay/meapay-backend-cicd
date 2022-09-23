@@ -139,7 +139,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"service_name": "${{ inputs.app_name }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", {"service_name": "${{ inputs.service_name }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
