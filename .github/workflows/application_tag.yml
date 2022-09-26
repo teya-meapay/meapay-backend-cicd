@@ -12,6 +12,9 @@ on:
       service_name:
         required: false
         type: string
+      deploy_container:
+        required: false
+        type: string
       deploy_task:
         required: false
         type: string
@@ -40,9 +43,6 @@ on:
       slack_bot_token:
         description: 'SLACK_BOT_TOKEN'
         required: false
-      slack_channel_id:
-        description: 'SLACK_CHANNEL_ID'
-        required: false
       cd_token:
         description: 'CD_TOKEN'
         required: false
@@ -59,27 +59,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: "Set tag to deploy from input"
+      - name: "Setup: Set tag to deploy from input"
         if: ${{ inputs.deploy_tag != 0 }}
         run: |
           echo "DEPLOY_TAG=${{ inputs.deploy_tag }}" >> $GITHUB_ENV
 
-      - name: "Get latest tag if input is empty"
+      - name: "Setup: Get latest tag if input is empty"
         if: ${{ inputs.deploy_tag == 0 }}
         run: |
           echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
 
-      - name: "Set task name to deploy from input"
+      - name: "Setup: Set task name to deploy from input"
         if: ${{ inputs.deploy_task != 0 }}
         run: |
           echo "DEPLOY_TASK=${{ inputs.deploy_task }}" >> $GITHUB_ENV
 
-      - name: "Create default task name if input is empty"
+      - name: "Setup: Create default task name if input is empty"
         if: ${{ inputs.deploy_task == 0 }}
         run: |
           echo "DEPLOY_TASK=softpos-${{ inputs.app_name }}-task" >> $GITHUB_ENV
 
-      - name: "Check if a github release already exists"
+      - name: "Setup: Set container name to deploy from input"
+        if: ${{ inputs.deploy_container != 0 }}
+        run: |
+          echo "DEPLOY_CONTAINER=${{ inputs.deploy_container }}" >> $GITHUB_ENV
+
+      - name: "Setup: Create default container name to deploy if input is empty"
+        if: ${{ inputs.deploy_container == 0 }}
+        run: |
+          echo "DEPLOY_CONTAINER=${{ inputs.service_name }}" >> $GITHUB_ENV
+
+      - name: "Release: Check if a github release already exists"
         id: find_release
         run: |
           get_release_tag_command=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.DEPLOY_TAG }}")
@@ -95,14 +105,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Get latest github release"
+      - name: "Release: Get latest github release"
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
           echo "LATEST_GH_RELEASE=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name' |  awk '{print substr($1,9)}')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Bump github release version"
+      - name: "Release: Bump github release version"
         id: bump_gh_release_version
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         uses: christian-draeger/increment-semantic-version@1.0.2
@@ -110,7 +120,7 @@ jobs:
           current-version: ${{ env.LATEST_GH_RELEASE }}
           version-fragment: 'bug'
 
-      - name: "Create new github release version"
+      - name: "Release: Create new github release version"
         id: gh_new_release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
@@ -125,7 +135,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Notify: Slack release notes"
+      - name: "Release: Notify Slack release notes"
         id: slack-post-release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         env:
@@ -167,7 +177,7 @@ jobs:
               ]
             }
 
-      - name: "Setup: AWS Credentials"
+      - name: "Deploy: Setup AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
@@ -183,10 +193,10 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: tst-release
-          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "task_name": "${{ env.DEPLOY_TASK }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "task_name": "${{ env.DEPLOY_TASK }}", "container_name": "${{ env.DEPLOY_CONTAINER }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
-      - name: "Notify: Slack errors"
+      - name: "Deploy: Notify Slack errors"
         id: slack
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
