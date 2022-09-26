@@ -6,19 +6,7 @@ on:
       build_command:
         required: true
         type: string
-      artifacts_publish_command:
-        required: false
-        type: string
-      docker_build_command:
-        required: false
-        type: string
-      docker_ecr_repository:
-        required: false
-        type: string
       slack_channel_id:
-        required: false
-        type: string
-      app_path:
         required: false
         type: string
       app_name:
@@ -27,7 +15,13 @@ on:
       service_name:
         required: false
         type: string
+      deploy_service:
+        required: false
+        type: string
       deploy_task:
+        required: false
+        type: string
+      deploy_registry:
         required: false
         type: string
       deploy_repo:
@@ -56,9 +50,6 @@ on:
         required: false
       slack_bot_token:
         description: 'SLACK_BOT_TOKEN'
-        required: false
-      slack_channel_id:
-        description: 'SLACK_CHANNEL_ID'
         required: false
       cd_token:
         description: 'CD_TOKEN'
@@ -94,6 +85,36 @@ jobs:
           tag_prefix: "release-"
           format: "${major}.${minor}.${patch}"
 
+      - name: "Setup: Set task name to deploy from input"
+        if: ${{ inputs.deploy_task != 0 }}
+        run: |
+          echo "DEPLOY_TASK=${{ inputs.deploy_task }}" >> $GITHUB_ENV
+
+      - name: "Setup: Create default task name if input is empty"
+        if: ${{ inputs.deploy_task == 0 }}
+        run: |
+          echo "DEPLOY_TASK=softpos-${{ inputs.app_name }}-task" >> $GITHUB_ENV
+
+      - name: "Setup: Set service name to deploy from input"
+        if: ${{ inputs.deploy_service != 0 }}
+        run: |
+          echo "DEPLOY_SERVICE=${{ inputs.deploy_service }}" >> $GITHUB_ENV
+
+      - name: "Setup: Create default service name to deploy if input is empty"
+        if: ${{ inputs.deploy_service == 0 }}
+        run: |
+          echo "DEPLOY_SERVICE=${{ inputs.service_name }}" >> $GITHUB_ENV
+
+      - name: "Setup: Set image registry name to deploy from input"
+        if: ${{ inputs.deploy_registry != 0 }}
+        run: |
+          echo "DEPLOY_REGISTRY=${{ inputs.deploy_registry }}" >> $GITHUB_ENV
+
+      - name: "Setup: Create default image registry name to deploy if input is empty"
+        if: ${{ inputs.deploy_registry == 0 }}
+        run: |
+          echo "DEPLOY_REGISTRY=${{ inputs.service_name }}" >> $GITHUB_ENV
+
       - name: Build
         uses: gradle/gradle-build-action@v2
         with:
@@ -128,7 +149,7 @@ jobs:
             JVM_MIN=-Xms1024m
             JVM_MAX=-Xmx2048m
           push: true
-          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ inputs.service_name }}:${{ steps.version.outputs.version_tag }}
+          tags: ${{ secrets.aws_env_account_id }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.DEPLOY_REGISTRY }}:${{ steps.version.outputs.version_tag }}
 
       - name: "Publish: Create and push tag"
         if: ${{ success() && inputs.build_command != 0 }}
@@ -136,26 +157,16 @@ jobs:
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
 
-      - name: "Set task name to deploy from input"
-        if: ${{ inputs.deploy_task != 0 }}
-        run: |
-          echo "DEPLOY_TASK=${{ inputs.deploy_task }}" >> $GITHUB_ENV
-
-      - name: "Create default task name if input is empty"
-        if: ${{ inputs.deploy_task == 0 }}
-        run: |
-          echo "DEPLOY_TASK=softpos-${{ inputs.app_name }}-task" >> $GITHUB_ENV
-
       - name: "Deploy: Dispatch deployment to the development"
-        if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
+        if: ${{ success() && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "task_name": "${{ env.DEPLOY_TASK }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ env.DEPLOY_SERVICE }}", "task_name": "${{ env.DEPLOY_TASK }}", "registry_name": "${{ env.DEPLOY_REGISTRY }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
-      - name: "Notify: Slack"
+      - name: "Deploy: Notify Slack errors"
         id: slack
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
@@ -163,4 +174,4 @@ jobs:
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
-          slack-message: "Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
