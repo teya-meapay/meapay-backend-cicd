@@ -12,6 +12,9 @@ on:
       service_name:
         required: false
         type: string
+      deploy_task:
+        required: false
+        type: string
       deploy_repo:
         required: false
         type: string
@@ -57,6 +60,7 @@ jobs:
           fetch-depth: 0
 
       - name: "Set tag to deploy from input"
+        if: ${{ inputs.deploy_tag != 0 }}
         run: |
           echo "DEPLOY_TAG=${{ inputs.deploy_tag }}" >> $GITHUB_ENV
 
@@ -64,6 +68,16 @@ jobs:
         if: ${{ inputs.deploy_tag == 0 }}
         run: |
           echo "DEPLOY_TAG=$(git tag --sort=committerdate | tail -1)" >> $GITHUB_ENV
+
+      - name: "Set task name to deploy from input"
+        if: ${{ inputs.deploy_task != 0 }}
+        run: |
+          echo "DEPLOY_TASK=${{ inputs.deploy_task }}" >> $GITHUB_ENV
+
+      - name: "Create default task name if input is empty"
+        if: ${{ inputs.deploy_task == 0 }}
+        run: |
+          echo "DEPLOY_TASK=softpos-${{ inputs.app_name }}-task" >> $GITHUB_ENV
 
       - name: "Check if a github release already exists"
         id: find_release
@@ -169,7 +183,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: tst-release
-          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "task_name": "${{ env.DEPLOY_TASK }}", "image_version": "${{ env.DEPLOY_TAG }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack errors"

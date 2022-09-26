@@ -27,6 +27,9 @@ on:
       service_name:
         required: false
         type: string
+      deploy_task:
+        required: false
+        type: string
       deploy_repo:
         required: false
         type: string
@@ -133,13 +136,23 @@ jobs:
           git tag ${{ steps.version.outputs.version_tag }}
           git push origin ${{ steps.version.outputs.version_tag }}
 
+      - name: "Set task name to deploy from input"
+        if: ${{ inputs.deploy_task != 0 }}
+        run: |
+          echo "DEPLOY_TASK=${{ inputs.deploy_task }}" >> $GITHUB_ENV
+
+      - name: "Create default task name if input is empty"
+        if: ${{ inputs.deploy_task == 0 }}
+        run: |
+          echo "DEPLOY_TASK=softpos-${{ inputs.app_name }}-task" >> $GITHUB_ENV
+
       - name: "Deploy: Dispatch deployment to the development"
         if: ${{ success() && inputs.service_name != 0 && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.cd_token }}
           event-type: dev-release
-          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ inputs.service_name }}", "task_name": "${{ env.DEPLOY_TASK }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Notify: Slack"
