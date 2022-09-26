@@ -98,7 +98,7 @@ jobs:
           echo "DEPLOY_REGISTRY=${{ inputs.deploy_registry }}" >> $GITHUB_ENV
 
       - name: "Setup: Create default image registry name to deploy if input is empty"
-        if: ${{ inputs.deploy_service == 0 }}
+        if: ${{ inputs.deploy_registry == 0 }}
         run: |
           echo "DEPLOY_REGISTRY=${{ inputs.service_name }}" >> $GITHUB_ENV
 
@@ -201,7 +201,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: "Deploy: Dispatch deployment to tst environment"
-        if: ${{ success() && env.DEPLOY_SERVICE != 0 && inputs.deploy_repo != 0 }}
+        if: ${{ success() && inputs.deploy_repo != 0 }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.cd_token }}
