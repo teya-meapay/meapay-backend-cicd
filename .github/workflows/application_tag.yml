@@ -12,10 +12,13 @@ on:
       service_name:
         required: false
         type: string
-      deploy_container:
+      deploy_service:
         required: false
         type: string
       deploy_task:
+        required: false
+        type: string
+      deploy_registry:
         required: false
         type: string
       deploy_repo:
@@ -88,6 +91,16 @@ jobs:
         if: ${{ inputs.deploy_service == 0 }}
         run: |
           echo "DEPLOY_SERVICE=${{ inputs.service_name }}" >> $GITHUB_ENV
+
+      - name: "Setup: Set image registry name to deploy from input"
+        if: ${{ inputs.deploy_registry != 0 }}
+        run: |
+          echo "DEPLOY_REGISTRY=${{ inputs.deploy_registry }}" >> $GITHUB_ENV
+
+      - name: "Setup: Create default image registry name to deploy if input is empty"
+        if: ${{ inputs.deploy_service == 0 }}
+        run: |
+          echo "DEPLOY_REGISTRY=${{ inputs.service_name }}" >> $GITHUB_ENV
 
       - name: "Release: Check if a github release already exists"
         id: find_release
@@ -177,7 +190,7 @@ jobs:
               ]
             }
 
-      - name: "Deploy: Setup AWS Credentials"
+      - name: "Setup: Setup AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.aws_role_to_assume }}
@@ -193,7 +206,7 @@ jobs:
         with:
           token: ${{ secrets.cd_token }}
           event-type: tst-release
-          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ env.DEPLOY_SERVICE }}", "task_name": "${{ env.DEPLOY_TASK }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
+          client-payload: '{"app_name": "${{ inputs.app_name }}", "service_name": "${{ env.DEPLOY_SERVICE }}", "task_name": "${{ env.DEPLOY_TASK }}", "registry_name": "${{ env.DEPLOY_REGISTRY }}", "image_version": "${{ steps.version.outputs.version_tag }}", "repository": "${{ github.repository }}", "run_id": "${{ github.run_id }}", "cluster": "${{ inputs.deploy_cluster }}"}'
           repository: ${{ inputs.deploy_repo }}
 
       - name: "Deploy: Notify Slack errors"
@@ -201,7 +214,7 @@ jobs:
         if: ${{ failure() && inputs.slack_channel_id != 0 }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.slack_bot_token }}
-        uses: slackapi/slack-github-action@v1.19.0
+        uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: ${{ inputs.slack_channel_id }}
           slack-message: Pipeline failed *${{ github.workflow }}* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
