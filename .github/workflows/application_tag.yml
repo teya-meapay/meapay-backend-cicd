@@ -137,9 +137,8 @@ jobs:
         id: gh_new_release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
-          new_release="release-${{ env.DEPLOY_TAG }}"
-          gh release create $new_release -t $new_release --generate-notes ${{ steps.last_release.outputs.last_release }}
-          release_json=$(gh api "repos/meawallet/${{ github.event.repository.name }}/releases/tags/$new_release")
+          gh release create ${{ env.DEPLOY_TAG }} -t ${{ env.DEPLOY_TAG }} --generate-notes ${{ steps.last_release.outputs.last_release }}
+          release_json=$(gh api "repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }}")
           release_title=$(jq -r '.name' <<< "$release_json")
           echo "::set-output name=release_title::$release_title"
           release_body=$(jq '.body' <<< "$release_json")
