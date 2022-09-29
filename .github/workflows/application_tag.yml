@@ -166,7 +166,7 @@ jobs:
                   "text":
                     {
                       "type": "plain_text",
-                      "text": ":meapay: ${{ steps.gh_new_release.outputs.release_title }}"
+                      "text": ":meapay: ${{ github.event.repository.name }} - ${{ steps.gh_new_release.outputs.release_title }}"
                     }
                 },
                 {
