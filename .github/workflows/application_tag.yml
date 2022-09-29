@@ -4,6 +4,7 @@ on:
   workflow_call:
     inputs:
       slack_channel_id:
+        description: 'Notification channel ID for deployment outcomes'
         required: false
         type: string
       app_name:
@@ -13,25 +14,30 @@ on:
         required: false
         type: string
       deploy_service:
+        description: 'Override service name to be deployed if differs from service_name'
         required: false
         type: string
-      deploy_task:
-        required: false
-        type: string
-      deploy_registry:
-        required: false
-        type: string
-      deploy_repo:
-        required: false
-        type: string
-      deploy_cluster:
-        required: false
-        type: string
-        default: private
       deploy_tag:
         description: 'Tag to be deployed'
         required: false
         type: string
+      deploy_task:
+        description: 'Override task name to be deployed'
+        required: false
+        type: string
+      deploy_registry:
+        description: 'Override registry service image should be fetched from'
+        required: false
+        type: string
+      deploy_repo:
+        description: 'Repository responsible for running the deployment'
+        required: false
+        type: string
+      deploy_cluster:
+        description: 'Override cluster to be deployed'
+        required: false
+        type: string
+        default: private
 
     secrets:
       aws_ca_domain:
@@ -102,7 +108,7 @@ jobs:
         run: |
           echo "DEPLOY_REGISTRY=${{ inputs.service_name }}" >> $GITHUB_ENV
 
-      - name: "Release: Check if a github release already exists"
+      - name: "Release: Check if a Github release already exists"
         id: find_release
         run: |
           get_release_tag_command=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${{ github.api_url }}/repos/${{ github.repository }}/releases/tags/${{ env.DEPLOY_TAG }}")
@@ -118,26 +124,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Release: Get latest github release"
+      - name: "Release: Get latest Github release"
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
           echo "LATEST_GH_RELEASE=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/latest --jq '.name' |  awk '{print substr($1,9)}')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Release: Bump github release version"
-        id: bump_gh_release_version
-        if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
-        uses: christian-draeger/increment-semantic-version@1.0.2
-        with:
-          current-version: ${{ env.LATEST_GH_RELEASE }}
-          version-fragment: 'bug'
-
-      - name: "Release: Create new github release version"
+      - name: "Release: Create new Github release version"
         id: gh_new_release
         if: ${{ steps.find_release.outputs.release_tag_exist != 0 }}
         run: |
-          gh release create ${{ env.DEPLOY_TAG }} -t release-${{ steps.bump_gh_release_version.outputs.next-version }} --generate-notes
+          gh release create ${{ env.DEPLOY_TAG }} -t ${{ env.DEPLOY_TAG }} --generate-notes --notes-start-tag ${{ env.LATEST_GH_RELEASE }}
           release_json=$(gh api repos/meawallet/${{ github.event.repository.name }}/releases/tags/${{ env.DEPLOY_TAG }})
           release_title=$(jq -r '.name' <<< "$release_json")
           echo "::set-output name=release_title::$release_title"
