@@ -40,6 +40,11 @@ on:
         required: false
         type: string
         default: private
+      app_path:
+        description: 'Location of application to publish'
+        required: false
+        type: string
+        default: app-artifact
 
     secrets:
       aws_ca_domain:
@@ -136,7 +141,7 @@ jobs:
       - name: "Build image: move jar file to root location"
         uses: canastro/copy-file-action@master
         with:
-          source: "app-artifact/${{ inputs.app_name }}-app.jar"
+          source: "${{ inputs.app_path }}/${{ inputs.app_name }}-app.jar"
           target: "${{ inputs.app_name }}.jar"
 
       - name: Login to Amazon ECR
