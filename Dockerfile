@@ -4,7 +4,7 @@ FROM amazoncorretto:11
 RUN mkdir /opt/app
 
 # Install required packages
-RUN yum -y update && yum -y install bash curl openssl-devel
+RUN yum -y update && yum -y install bash curl openssl openssl-devel
 
 # Define environment arguments
 ARG APP_NAME
